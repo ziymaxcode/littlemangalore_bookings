@@ -6,10 +6,23 @@ import { Select } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { submitBooking, ADVANCE_AMOUNTS } from '@/src/lib/booking';
 import { motion } from 'motion/react';
+import { useBlockedDates } from '@/src/hooks/useBlockedDates';
 
 export default function ResortForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<any>(null);
+  const [selectedDate, setSelectedDate] = useState('');
+  const { isDateBlocked } = useBlockedDates('resort');
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const date = e.target.value;
+    if (isDateBlocked(date)) {
+      alert('This date is currently unavailable. Please select another date.');
+      setSelectedDate('');
+    } else {
+      setSelectedDate(date);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -73,7 +86,15 @@ export default function ResortForm() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
           <Label htmlFor="date">Date of Stay</Label>
-          <Input id="date" name="date" type="date" required min={new Date().toISOString().split('T')[0]} />
+          <Input 
+            id="date" 
+            name="date" 
+            type="date" 
+            required 
+            min={new Date().toISOString().split('T')[0]} 
+            value={selectedDate}
+            onChange={handleDateChange}
+          />
         </div>
         <div>
           <Label htmlFor="guests">Number of Guests</Label>

@@ -7,6 +7,7 @@ import { submitBooking, ADVANCE_AMOUNTS } from '@/src/lib/booking';
 import { supabase } from '@/src/lib/supabase';
 import { motion } from 'motion/react';
 import { cn } from '@/src/lib/utils';
+import { useBlockedDates } from '@/src/hooks/useBlockedDates';
 
 const TIME_SLOTS = [
   { label: 'Morning (6 AM - 9 AM)', value: '6AM-9AM' },
@@ -21,12 +22,19 @@ export default function TurfForm() {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string>('');
+  const { isDateBlocked } = useBlockedDates('turf');
 
   useEffect(() => {
     if (selectedDate) {
-      fetchBookedSlots(selectedDate);
+      if (isDateBlocked(selectedDate)) {
+        alert('This date is currently unavailable. Please select another date.');
+        setSelectedDate('');
+        setBookedSlots([]);
+      } else {
+        fetchBookedSlots(selectedDate);
+      }
     }
-  }, [selectedDate]);
+  }, [selectedDate, isDateBlocked]);
 
   const fetchBookedSlots = async (date: string) => {
     const { data, error } = await supabase

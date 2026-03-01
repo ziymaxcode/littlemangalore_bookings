@@ -35,7 +35,7 @@ export async function submitBooking(data: BookingData) {
       .insert([
         {
           ...data,
-          status: data.payment_method === 'upi' ? 'paid' : 'pending', // Simplified: assume UPI is paid immediately for this demo if they select UPI. In reality, we'd verify Razorpay callback.
+          status: data.payment_method === 'upi' ? 'paid' : 'pending',
         },
       ])
       .select()

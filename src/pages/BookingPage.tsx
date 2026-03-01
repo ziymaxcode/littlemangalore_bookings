@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import ResortForm from '@/src/components/forms/ResortForm';
@@ -8,7 +9,23 @@ import EventForm from '@/src/components/forms/EventForm';
 type TabType = 'resort' | 'turf' | 'event';
 
 export default function BookingPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('resort');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as TabType;
+  
+  const [activeTab, setActiveTab] = useState<TabType>(
+    ['resort', 'turf', 'event'].includes(tabParam) ? tabParam : 'resort'
+  );
+
+  useEffect(() => {
+    if (['resort', 'turf', 'event'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   return (
     <div className="flex-1 flex flex-col">
@@ -29,7 +46,7 @@ export default function BookingPage() {
             {(['resort', 'turf', 'event'] as TabType[]).map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => handleTabChange(tab)}
                 className={cn(
                   "flex-1 py-3 px-4 text-sm font-semibold rounded-xl transition-all relative z-10 capitalize",
                   activeTab === tab ? "text-primary" : "text-text-muted hover:text-primary"
