@@ -17,8 +17,8 @@ export interface BookingData {
   notes?: string;
 }
 
-const OWNER_PHONE = '918050006565';
-const UPI_ID = 'littlemangalore@upi'; // Placeholder UPI ID
+const OWNER_PHONE = '918217366801';
+const UPI_ID = '8217366801@superyes'; // Placeholder UPI ID
 const UPI_NAME = 'Little Mangalore';
 
 export const ADVANCE_AMOUNTS = {

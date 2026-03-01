@@ -1,24 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '@/src/lib/supabase';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
 import { motion } from 'motion/react';
 
+
 export default function AdminLogin() {
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/admin/dashboard';
 
+  // 🔥 Listen for auth changes and redirect when session exists
   useEffect(() => {
-    // Check if user is already logged in
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        navigate(from, { replace: true });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, from]);
+
+  // 🔥 Check if already logged in
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate(from, { replace: true });
@@ -32,29 +46,32 @@ export default function AdminLogin() {
     setError(null);
 
     const { error } = await supabase.auth.signInWithPassword({
-      phone,
+      email,
       password,
     });
 
     if (error) {
-      setError('Invalid credentials');
+      setError('Invalid email or password');
       setLoading(false);
-    } else {
-      // Supabase automatically persists session based on its configuration
-      // We can use localStorage to remember the phone if "Remember me" is checked
-      if (rememberMe) {
-        localStorage.setItem('adminPhone', phone);
-      } else {
-        localStorage.removeItem('adminPhone');
-      }
-      navigate(from, { replace: true });
+      return;
     }
+
+    // Save email if Remember Me is checked
+    if (rememberMe) {
+      localStorage.setItem('adminmail', email);
+    } else {
+      localStorage.removeItem('adminmail');
+    }
+
+    setLoading(false);
+    // 🚀 DO NOT manually navigate here
+    // onAuthStateChange will handle redirect
   };
 
   useEffect(() => {
-    const savedPhone = localStorage.getItem('adminPhone');
-    if (savedPhone) {
-      setPhone(savedPhone);
+    const savedEmail = localStorage.getItem('adminmail');
+    if (savedEmail) {
+      setEmail(savedEmail);
       setRememberMe(true);
     }
   }, []);
@@ -67,9 +84,11 @@ export default function AdminLogin() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <h2 className="text-3xl font-extrabold text-[#1B4332]">
-            Little Mangalore
-          </h2>
+          <Link to="/" className="inline-block">
+  <h2 className="text-3xl font-extrabold text-[#1B4332] hover:text-[#2D9D78] transition">
+    Little Mangalore
+  </h2>
+</Link>
           <p className="mt-2 text-sm text-gray-600">
             Admin Portal
           </p>
@@ -86,29 +105,24 @@ export default function AdminLogin() {
           <form className="space-y-6" onSubmit={handleLogin}>
             {error && (
               <div className="bg-red-50 border-l-4 border-red-400 p-4">
-                <div className="flex">
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
 
             <div>
-              <Label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                Phone Number (with country code)
+              <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
               </Label>
               <div className="mt-1">
                 <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  autoComplete="tel"
-                  placeholder="+919876543210"
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="admin@gmail.com"
                   required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#2D9D78] focus:border-[#2D9D78] sm:text-sm"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
             </div>
@@ -126,45 +140,33 @@ export default function AdminLogin() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#2D9D78] focus:border-[#2D9D78] sm:text-sm"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 text-[#2D9D78] focus:ring-[#2D9D78] border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
-                </label>
-              </div>
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 text-[#2D9D78] border-gray-300 rounded"
+              />
+              <label htmlFor="remember-me" className="ml-2 text-sm text-gray-900">
+                Remember me
+              </label>
             </div>
 
             <div>
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#1B4332] hover:bg-[#2D9D78] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2D9D78] transition-colors"
+                className="w-full bg-[#1B4332] hover:bg-[#2D9D78] text-white"
               >
                 {loading ? 'Signing in...' : 'Login'}
               </Button>
             </div>
           </form>
-
-          {/* SUPABASE AUTH SETUP NOTE:
-            - Go to Supabase Dashboard -> Authentication -> Users
-            - Click "Add User" -> enter admin phone number + password manually
-            - Ensure Phone Provider is enabled in Auth Providers if required by your Supabase setup
-            - No public signup allowed (disable in Supabase Auth settings)
-            - Only manually created users can log in
-          */}
         </div>
       </motion.div>
     </div>

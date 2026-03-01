@@ -5,6 +5,7 @@ import { cn } from '@/src/lib/utils';
 import ResortForm from '@/src/components/forms/ResortForm';
 import TurfForm from '@/src/components/forms/TurfForm';
 import EventForm from '@/src/components/forms/EventForm';
+import { Link } from 'react-router-dom';
 
 type TabType = 'resort' | 'turf' | 'event';
 
@@ -32,7 +33,11 @@ export default function BookingPage() {
       {/* Header */}
       <header className="bg-primary text-white py-6 px-4 shadow-md sticky top-0 z-10">
         <div className="max-w-3xl mx-auto flex flex-col items-center text-center">
-          <h1 className="text-3xl font-serif font-bold tracking-wide mb-1">Little Mangalore</h1>
+          <Link to="/">
+  <h1 className="text-3xl font-serif font-bold tracking-wide mb-1 hover:opacity-80 transition cursor-pointer">
+    Little Mangalore
+  </h1>
+</Link>
           <p className="text-primary-light text-sm font-medium tracking-widest uppercase">Resort & Turf</p>
         </div>
       </header>
