@@ -85,21 +85,63 @@ export default function AdminDashboard() {
     setStats({ total, today: todayBookings, pending, revenue });
   };
 
-  const updateStatus = async (id: string, newStatus: string) => {
-    const { error } = await supabase
-      .from('bookings')
-      .update({ status: newStatus })
-      .eq('id', id);
+ const updateStatus = async (booking: Booking, newStatus: string) => {
+  const { error } = await supabase
+    .from('bookings')
+    .update({ status: newStatus })
+    .eq('id', booking.id);
 
-    if (!error) {
-      const updatedBookings = bookings.map(b => b.id === id ? { ...b, status: newStatus } : b);
-      setBookings(updatedBookings);
-      calculateStats(updatedBookings);
-      // In a real app, show a toast notification here
-    } else {
-      alert('Failed to update status');
+  if (!error) {
+    const updatedBookings = bookings.map(b =>
+      b.id === booking.id ? { ...b, status: newStatus } : b
+    );
+
+    setBookings(updatedBookings);
+    calculateStats(updatedBookings);
+
+    // 🔔 Custom WhatsApp message
+    let message = "";
+
+    if (newStatus === "confirmed") {
+      message = `Hi ${booking.name}, your booking at Little Mangalore has been *confirmed* ✅
+
+📅 Date: ${booking.date}
+⏰ Time: ${booking.time_slot || booking.room_type || booking.event_type}
+
+Please arrive 10 minutes early.
+
+Thank you!`;
     }
-  };
+
+    if (newStatus === "paid") {
+      message = `Hi ${booking.name}, we have received your payment 💰
+
+Your booking at Little Mangalore is now *fully confirmed*.
+
+📅 Date: ${booking.date}
+⏰ Time: ${booking.time_slot || booking.room_type || booking.event_type}
+
+See you soon!`;
+    }
+
+    if (newStatus === "cancelled") {
+      message = `Hi ${booking.name}, unfortunately your booking at Little Mangalore has been *cancelled* ❌
+
+📅 Date: ${booking.date}
+
+If this was a mistake or you'd like to reschedule, please contact us.
+
+Thank you.`;
+    }
+
+    const whatsappUrl = `https://wa.me/${booking.phone}?text=${encodeURIComponent(message)}`;
+
+    window.open(whatsappUrl, "_blank");
+
+  } else {
+    alert("Failed to update status");
+  }
+};
 
   const filteredBookings = bookings.filter(b => {
     const matchType = filterType === 'all' || b.type === filterType;
@@ -279,7 +321,7 @@ export default function AdminDashboard() {
                         <div className="flex items-center justify-end gap-2">
                           {booking.status !== 'confirmed' && booking.status !== 'cancelled' && (
                             <button
-                              onClick={() => updateStatus(booking.id, 'confirmed')}
+                              onClick={() => updateStatus(booking, 'confirmed')}
                               title="Confirm Booking"
                               className="text-green-600 hover:text-green-900 bg-green-50 p-1.5 rounded-md hover:bg-green-100 transition-colors"
                             >
@@ -288,7 +330,7 @@ export default function AdminDashboard() {
                           )}
                           {booking.status !== 'paid' && booking.status !== 'cancelled' && (
                             <button
-                              onClick={() => updateStatus(booking.id, 'paid')}
+                              onClick={() => updateStatus(booking, 'paid')}
                               title="Mark as Paid"
                               className="text-blue-600 hover:text-blue-900 bg-blue-50 p-1.5 rounded-md hover:bg-blue-100 transition-colors"
                             >
@@ -297,7 +339,7 @@ export default function AdminDashboard() {
                           )}
                           {booking.status !== 'cancelled' && (
                             <button
-                              onClick={() => updateStatus(booking.id, 'cancelled')}
+                              onClick={() => updateStatus(booking, 'cancelled')}
                               title="Cancel Booking"
                               className="text-red-600 hover:text-red-900 bg-red-50 p-1.5 rounded-md hover:bg-red-100 transition-colors"
                             >

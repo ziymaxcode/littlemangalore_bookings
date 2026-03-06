@@ -9,12 +9,28 @@ import { motion } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { useBlockedDates } from '@/src/hooks/useBlockedDates';
 
-const TIME_SLOTS = [
-  { label: 'Morning (6 AM - 9 AM)', value: '6AM-9AM' },
-  { label: 'Daytime (9 AM - 5 PM)', value: '9AM-5PM' },
-  { label: 'Evening (5 PM - 9 PM)', value: '5PM-9PM' },
-  { label: 'Night (9 PM - 12 AM)', value: '9PM-12AM' },
-];
+const generateTimeSlots = () => {
+  const slots = [];
+  let start = 7; // 7 AM
+  const end = 26; // 2 AM next day (24 + 2)
+
+  const formatHour = (h: number) => {
+    const hour = h % 24;
+    const period = hour >= 12 ? "PM" : "AM";
+    const display = hour % 12 === 0 ? 12 : hour % 12;
+    return `${display} ${period}`;
+  };
+
+  for (let i = start; i < end; i++) {
+    const label = `${formatHour(i)} - ${formatHour(i + 1)}`;
+    const value = `${i % 24}-${(i + 1) % 24}`;
+    slots.push({ label, value });
+  }
+
+  return slots;
+};
+
+const TIME_SLOTS = generateTimeSlots();
 
 export default function TurfForm() {
   const [loading, setLoading] = useState(false);
@@ -37,27 +53,44 @@ export default function TurfForm() {
   }, [selectedDate, isDateBlocked]);
 
   const fetchBookedSlots = async (date: string) => {
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('time_slot')
-      .eq('type', 'turf')
-      .eq('date', date)
-      .in('status', ['confirmed', 'paid']);
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('time_slot')
+    .eq('type', 'turf')
+    .eq('date', date)
+    .not('status', 'eq', 'cancelled');
 
-    if (!error && data) {
-      setBookedSlots(data.map(b => b.time_slot));
-    }
-  };
+  if (!error && data) {
+    setBookedSlots(data.map(b => b.time_slot));
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!selectedSlot) {
-      alert('Please select a time slot.');
-      return;
-    }
-    setLoading(true);
+  e.preventDefault();
 
-    const formData = new FormData(e.currentTarget);
+  if (!selectedSlot) {
+    alert('Please select a time slot.');
+    return;
+  }
+
+  setLoading(true);
+
+  // 🔴 Check if slot already booked
+  const { data: existing } = await supabase
+    .from('bookings')
+    .select('id')
+    .eq('type', 'turf')
+    .eq('date', selectedDate)
+    .eq('time_slot', selectedSlot)
+    .not('status', 'eq', 'cancelled');
+
+  if (existing && existing.length > 0) {
+    alert('This time slot has already been booked.');
+    setLoading(false);
+    return;
+  }
+
+    const formData = new FormData(e.target as HTMLFormElement);
     const data = {
       type: 'turf' as const,
       name: formData.get('name') as string,
