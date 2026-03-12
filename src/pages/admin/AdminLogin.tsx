@@ -119,7 +119,7 @@ export default function AdminLogin() {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  placeholder="admin@gmail.com"
+                  placeholder=""
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}

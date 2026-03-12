@@ -48,15 +48,20 @@ export default function HomePage() {
       )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
-              isScrolled ? "bg-primary text-white" : "bg-white text-primary"
-            )}>
-              <Tent className="w-5 h-5" />
-            </div>
-            <div className="flex flex-col">
-              <span className={cn(
+          <div
+  className="flex items-center gap-2 cursor-pointer"
+  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+>
+  
+  {/* Logo Image */}
+  <img
+    src="/lm2_1.png"
+    alt="Little Mangalore"
+    className="h-10 w-auto object-contain"
+  />
+
+  <div className="flex flex-col">
+    <span className={cn(
                 "font-serif font-bold text-lg leading-tight transition-colors",
                 isScrolled ? "text-primary" : "text-white"
               )}>Little</span>
@@ -110,7 +115,7 @@ export default function HomePage() {
         {/* Background Image */}
         <div className="absolute inset-0 w-full h-full">
           <img 
-            src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80" 
+            src="/lm5.jpeg" 
             alt="Little Mangalore Resort" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
@@ -127,7 +132,7 @@ export default function HomePage() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-5xl md:text-7xl font-serif font-bold text-white mb-6 leading-tight"
           >
-            Escape to <span className="text-accent">Little Mangalore</span>
+            Welcome to <span className="text-accent">Little Mangalore</span>
           </motion.h1>
           
           <motion.p 
@@ -179,7 +184,7 @@ export default function HomePage() {
           >
             <div className="relative rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.1)] border-2 border-accent/20 animate-[float_6s_ease-in-out_infinite]">
               <img 
-                src="https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+                src="/lm6.jpeg" 
                 alt="Resort Exterior" 
                 className="w-full h-[500px] object-cover"
                 referrerPolicy="no-referrer"
@@ -257,7 +262,7 @@ export default function HomePage() {
               className="group relative rounded-2xl overflow-hidden min-h-[420px] shadow-lg transition-transform duration-300"
             >
               <img 
-                src="https://images.unsplash.com/photo-1542314831-c6a4d1409e1c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+                src="/lm1.jpeg" 
                 alt="The Resort" 
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 referrerPolicy="no-referrer"
@@ -301,7 +306,7 @@ export default function HomePage() {
               className="group relative rounded-2xl overflow-hidden min-h-[420px] shadow-lg transition-transform duration-300"
             >
               <img 
-                src="https://images.unsplash.com/photo-1518605368461-1e1e11111111?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+                src="/lm8.jpeg" 
                 alt="The Turf" 
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 referrerPolicy="no-referrer"
@@ -359,12 +364,13 @@ export default function HomePage() {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
         >
           {[
-            "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", // Riverside sunset
-            "https://images.unsplash.com/photo-1544551763-46a013bb70d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", // Boat
-            "https://images.unsplash.com/photo-1585320806297-9794b3e4ce88?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", // Garden steps
-            "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", // Resort exterior
-            "https://images.unsplash.com/photo-1572331165267-854da2b10ccc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", // Pool
-            "https://images.unsplash.com/photo-1511886929837-354d827aae26?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"  // Event/Amenities
+            "/lm3.jpeg", // Riverside sunset
+            "/lm4.jpeg", // Boat
+            "/lm5.jpeg", // Garden steps
+            "/lm1.jpeg", // Resort exterior
+            "/lm7.jpeg", // Pool
+            "/lm8.jpeg",
+            "/lm9.jpeg"  // Event/Amenities
           ].map((src, index) => (
             <motion.div 
               key={index}
@@ -418,8 +424,13 @@ export default function HomePage() {
           {/* Column 1 - Brand */}
           <div className="space-y-6">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-white text-[#111111] flex items-center justify-center">
-                <Tent className="w-5 h-5" />
+              <div c className="flex items-center gap-2 cursor-pointer">
+               <img
+    src="/lm2_1.png"
+    alt="Little Mangalore"
+    className="h-10 w-auto object-contain"
+  />
+
               </div>
               <div className="flex flex-col">
                 <span className="font-serif font-bold text-lg leading-tight text-white">Little</span>
@@ -430,7 +441,7 @@ export default function HomePage() {
               Your perfect coastal getaway and premium sports destination. Experience the best of relaxation and recreation.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-accent transition-colors">
+              <a href="https://www.instagram.com/little_mangalore " className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-accent transition-colors">
                 <Instagram className="w-5 h-5" />
               </a>
             </div>
@@ -471,7 +482,7 @@ export default function HomePage() {
             <h4 className="font-bold text-lg mb-6 font-serif">Find Us</h4>
             <div className="w-full h-48 rounded-xl overflow-hidden bg-gray-800">
               <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3890.316885621868!2d74.8516035!3d12.8227878!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ba35b0021c33c1d%3A0x7d9f7e8b8f8b8b8b!2sLittle%20Mangalore!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin" 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d112785.89086232136!2d74.77033644051289!3d12.783501461647889!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ba359ccbcf10a0b%3A0x5ca3112416e16378!2sLittle%20Mangalore!5e1!3m2!1sen!2sin!4v1773315939257!5m2!1sen!2sin" 
                 width="100%" 
                 height="100%" 
                 style={{ border: 0 }} 

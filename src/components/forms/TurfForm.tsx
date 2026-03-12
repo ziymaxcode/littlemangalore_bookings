@@ -136,11 +136,11 @@ export default function TurfForm() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
           <Label htmlFor="name">Full Name</Label>
-          <Input id="name" name="name" required placeholder="John Doe" />
+          <Input id="name" name="name" required placeholder="" />
         </div>
         <div>
           <Label htmlFor="phone">Contact Number</Label>
-          <Input id="phone" name="phone" type="tel" required placeholder="+91 9876543210" />
+          <Input id="phone" name="phone" type="tel" required placeholder="" />
         </div>
       </div>
 
