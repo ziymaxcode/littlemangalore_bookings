@@ -5,14 +5,16 @@ export function useBlockedDates(type: "resort" | "event" | "turf") {
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchBlockedDates();
+    if (type !== "turf") {
+      fetchBlockedDates();
+    }
   }, [type]);
 
   const fetchBlockedDates = async () => {
     const { data, error } = await supabase
       .from("bookings")
       .select("date")
-      .eq("type", type)
+      .in("type", ["resort", "event"])
       .in("status", ["pending", "confirmed", "paid"]);
 
     if (!error && data) {
@@ -22,6 +24,7 @@ export function useBlockedDates(type: "resort" | "event" | "turf") {
   };
 
   const isDateBlocked = (date: string) => {
+    if (type === "turf") return false; // turf never blocks whole day
     return blockedDates.includes(date);
   };
 
