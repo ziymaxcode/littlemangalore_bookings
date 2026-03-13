@@ -61,7 +61,7 @@ export default function TurfForm() {
     .not('status', 'eq', 'cancelled');
 
   if (!error && data) {
-    setBookedSlots(data.map(b => b.time_slot));
+   setBookedSlots(data.map(b => b.time_slot?.trim()));
   }
 };
 
@@ -99,7 +99,7 @@ const data = {
   name: formData.get('name') as string,
   phone: formData.get('phone') as string,
   date: selectedDate,
-  time_slot: selectedSlotLabel,
+  time_slot: selectedSlot,
   event_type: formData.get('sport_type') as string,
   payment_method: formData.get('payment_method') as 'upi' | 'venue',
 };
@@ -107,6 +107,7 @@ const data = {
     setLoading(false);
 
     if (res.success) {
+       fetchBookedSlots(selectedDate);
       setSuccess(res);
       if (res.upiUrl) {
         window.location.href = res.upiUrl;
