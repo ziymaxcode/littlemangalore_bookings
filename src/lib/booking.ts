@@ -75,14 +75,28 @@
     }
     
   }
+  function formatSlot(slot?: string) {
+  if (!slot) return "";
+
+  const [start, end] = slot.split("-").map(Number);
+
+  const formatHour = (h: number) => {
+    const hour = h % 24;
+    const period = hour >= 12 ? "PM" : "AM";
+    const display = hour % 12 === 0 ? 12 : hour % 12;
+    return `${display} ${period}`;
+  };
+
+  return `${formatHour(start)} - ${formatHour(end)}`;
+}
 
   function generateWhatsAppLink(data: BookingData, ref: string) {
-    const text = `New Booking Alert! 🔔
+  const text = `New Booking Alert! 🔔
   Ref: ${ref}
   Name: ${data.name}
   Type: ${data.type.toUpperCase()}
   Date: ${data.date}
-  ${data.time_slot ? `Slot: ${data.time_slot}\n` : ''}${data.room_type ? `Room: ${data.room_type}\n` : ''}${data.event_type ? `Event: ${data.event_type}\n` : ''}Guests: ${data.guests || 'N/A'}
+  ${data.time_slot ? `Slot: ${formatSlot(data.time_slot)}\n` : ''} ${data.room_type ? `Room: ${data.room_type}\n` : ''} ${data.event_type ? `Event: ${data.event_type}\n` : ''} Guests: ${data.guests || 'N/A'}
   Payment: ${data.payment_method === 'upi' ? 'UPI (Paid)' : 'Pay at Venue'}
   Phone: ${data.phone}
   ${data.notes ? `Notes: ${data.notes}` : ''}`;
