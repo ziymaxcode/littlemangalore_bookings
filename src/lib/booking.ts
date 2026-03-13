@@ -99,6 +99,7 @@
   ${data.time_slot ? `Slot: ${formatSlot(data.time_slot)}\n` : ''} ${data.room_type ? `Room: ${data.room_type}\n` : ''} ${data.event_type ? `Event: ${data.event_type}\n` : ''} Guests: ${data.guests || 'N/A'}
   Payment: ${data.payment_method === 'upi' ? 'UPI (Paid)' : 'Pay at Venue'}
   Phone: ${data.phone}
+  Admin confirmation at: https://littlemangalore.vercel.app/admin/login
   ${data.notes ? `Notes: ${data.notes}` : ''}`;
 
     return `https://wa.me/${OWNER_PHONE}?text=${encodeURIComponent(text)}`;
