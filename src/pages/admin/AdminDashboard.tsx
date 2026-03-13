@@ -84,6 +84,20 @@ export default function AdminDashboard() {
 
     setStats({ total, today: todayBookings, pending, revenue });
   };
+  function formatSlot(slot?: string) {
+  if (!slot) return "";
+
+  const [start, end] = slot.split("-").map(Number);
+
+  const convert = (h: number) => {
+    const hour = h % 24;
+    const period = hour >= 12 ? "PM" : "AM";
+    const display = hour % 12 === 0 ? 12 : hour % 12;
+    return `${display} ${period}`;
+  };
+
+  return `${convert(start)} - ${convert(end)}`;
+}
 
  const updateStatus = async (booking: Booking, newStatus: string) => {
   const { error } = await supabase
@@ -106,7 +120,7 @@ export default function AdminDashboard() {
       message = `Hi ${booking.name}, your booking at Little Mangalore has been *confirmed* ✅
 
 📅 Date: ${booking.date}
-⏰ Time: ${booking.time_slot || booking.room_type || booking.event_type}
+⏰ Time: ${booking.time_slot ? formatSlot(booking.time_slot) : (booking.room_type || booking.event_type)}
 
 Please arrive 10 minutes early.
 
@@ -119,7 +133,7 @@ Thank you!`;
 Your booking at Little Mangalore is now *fully confirmed*.
 
 📅 Date: ${booking.date}
-⏰ Time: ${booking.time_slot || booking.room_type || booking.event_type}
+⏰ Time: ${booking.time_slot ? formatSlot(booking.time_slot) : (booking.room_type || booking.event_type)}
 
 See you soon!`;
     }
@@ -129,7 +143,7 @@ See you soon!`;
 
 📅 Date: ${booking.date}
 
-If this was a mistake or you'd like to reschedule, please contact us.
+If you'd like to reschedule, please contact us.
 
 Thank you.`;
     }
