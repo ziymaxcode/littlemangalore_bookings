@@ -91,16 +91,18 @@ export default function TurfForm() {
   }
 
     const formData = new FormData(e.target as HTMLFormElement);
-    const data = {
-      type: 'turf' as const,
-      name: formData.get('name') as string,
-      phone: formData.get('phone') as string,
-      date: selectedDate,
-      time_slot: selectedSlot,
-      event_type: formData.get('sport_type') as string, // Using event_type for sport
-      payment_method: formData.get('payment_method') as 'upi' | 'venue',
-    };
+    const selectedSlotLabel =
+  TIME_SLOTS.find((s) => s.value === selectedSlot)?.label || selectedSlot;
 
+const data = {
+  type: 'turf' as const,
+  name: formData.get('name') as string,
+  phone: formData.get('phone') as string,
+  date: selectedDate,
+  time_slot: selectedSlotLabel,
+  event_type: formData.get('sport_type') as string,
+  payment_method: formData.get('payment_method') as 'upi' | 'venue',
+};
     const res = await submitBooking(data);
     setLoading(false);
 

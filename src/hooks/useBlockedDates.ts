@@ -1,33 +1,29 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/src/lib/supabase';
+import { useEffect, useState } from "react";
+import { supabase } from "@/src/lib/supabase";
 
-export function useBlockedDates(type: 'resort' | 'turf' | 'event') {
+export function useBlockedDates(type: "resort" | "event" | "turf") {
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBlockedDates = async () => {
-      setLoading(true);
-      const today = new Date().toISOString().split('T')[0];
-      
-      const { data, error } = await supabase
-        .from('blocked_dates')
-        .select('date')
-        .gte('date', today)
-        .in('type', ['all', type]);
-
-      if (!error && data) {
-        setBlockedDates(data.map(b => b.date));
-      }
-      setLoading(false);
-    };
-
     fetchBlockedDates();
   }, [type]);
 
-  const isDateBlocked = (dateStr: string) => {
-    return blockedDates.includes(dateStr);
+  const fetchBlockedDates = async () => {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("date")
+      .eq("type", type)
+      .in("status", ["pending", "confirmed", "paid"]);
+
+    if (!error && data) {
+      const dates = data.map((b) => b.date);
+      setBlockedDates(dates);
+    }
   };
 
-  return { blockedDates, isDateBlocked, loading };
+  const isDateBlocked = (date: string) => {
+    return blockedDates.includes(date);
+  };
+
+  return { isDateBlocked };
 }
