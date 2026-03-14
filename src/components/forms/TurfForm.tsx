@@ -8,6 +8,7 @@ import { supabase } from '@/src/lib/supabase';
 import { motion } from 'motion/react';
 import { cn } from '@/src/lib/utils';
 import { useBlockedDates } from '@/src/hooks/useBlockedDates';
+import QRCode from "react-qr-code";
 
 const generateTimeSlots = () => {
   const slots = [];
@@ -32,14 +33,21 @@ const generateTimeSlots = () => {
 
 const TIME_SLOTS = generateTimeSlots();
 
+// 👉 Replace this with your actual business UPI ID
+const MY_UPI_ID = "8217366801@superyes"; 
+
 export default function TurfForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string>('');
+  
+  // 👉 Added state to track payment method changes in real-time
+  const [paymentMethod, setPaymentMethod] = useState<'venue' | 'upi'>('venue');
+  
   const { isDateBlocked } = useBlockedDates('turf');
-
+  
   useEffect(() => {
     if (selectedDate) {
       if (isDateBlocked(selectedDate)) {
@@ -53,68 +61,65 @@ export default function TurfForm() {
   }, [selectedDate, isDateBlocked]);
 
   const fetchBookedSlots = async (date: string) => {
-  const { data, error } = await supabase
-    .from('bookings')
-    .select('time_slot')
-    .eq('type', 'turf')
-    .eq('date', date)
-    .not('status', 'eq', 'cancelled');
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('time_slot')
+      .eq('type', 'turf')
+      .eq('date', date)
+      .not('status', 'eq', 'cancelled');
 
-  if (!error && data) {
-   setBookedSlots(data.map(b => b.time_slot?.trim()));
-  }
-};
+    if (!error && data) {
+      setBookedSlots(data.map(b => b.time_slot?.trim()));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!selectedSlot) {
-    alert('Please select a time slot.');
-    return;
-  }
+    if (!selectedSlot) {
+      alert('Please select a time slot.');
+      return;
+    }
 
-  setLoading(true);
+    setLoading(true);
 
-  // 🔴 Check if slot already booked
-  const { data: existing } = await supabase
-    .from('bookings')
-    .select('id')
-    .eq('type', 'turf')
-    .eq('date', selectedDate)
-    .eq('time_slot', selectedSlot)
-    .not('status', 'eq', 'cancelled');
+    // 🔴 Check if slot already booked
+    const { data: existing } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('type', 'turf')
+      .eq('date', selectedDate)
+      .eq('time_slot', selectedSlot)
+      .not('status', 'eq', 'cancelled');
 
-  if (existing && existing.length > 0) {
-    alert('This time slot has already been booked.');
-    setLoading(false);
-    return;
-  }
+    if (existing && existing.length > 0) {
+      alert('This time slot has already been booked.');
+      setLoading(false);
+      return;
+    }
 
     const formData = new FormData(e.target as HTMLFormElement);
-    const selectedSlotLabel =
-  TIME_SLOTS.find((s) => s.value === selectedSlot)?.label || selectedSlot;
 
-const data = {
-  type: 'turf' as const,
-  name: formData.get('name') as string,
-  phone: formData.get('phone') as string,
-  date: selectedDate,
-  time_slot: selectedSlot,
-  event_type: formData.get('sport_type') as string,
-  payment_method: formData.get('payment_method') as 'upi' | 'venue',
-};
+    const data = {
+      type: 'turf' as const,
+      name: formData.get('name') as string,
+      phone: formData.get('phone') as string,
+      date: selectedDate,
+      time_slot: selectedSlot,
+      event_type: formData.get('sport_type') as string,
+      payment_method: paymentMethod,
+    };
+    
     const res = await submitBooking(data);
     setLoading(false);
 
     if (res.success) {
-       fetchBookedSlots(selectedDate);
+      fetchBookedSlots(selectedDate);
       setSuccess(res);
-      if (res.upiUrl) {
-        window.location.href = res.upiUrl;
-        setTimeout(() => window.open(res.waUrl, '_blank'), 2000);
-      } else {
-        window.open(res.waUrl, '_blank');
-      }
+      
+      // 👉 Removed the auto-redirect to UPI app because they scanned the QR code.
+      // Just opening WhatsApp confirmation now.
+      setTimeout(() => window.open(res.waUrl, '_blank'), 2000);
     } else {
       alert('Failed to submit booking. Please try again.');
     }
@@ -133,6 +138,9 @@ const data = {
       </motion.div>
     );
   }
+
+  // 👉 The UPI link format requires specific parameters to open properly in GPay/PhonePe
+  const upiLink = `upi://pay?pa=${MY_UPI_ID}&pn=Little%20Mangalore&am=${ADVANCE_AMOUNTS.turf}&cu=INR`;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -204,14 +212,40 @@ const data = {
 
       <div>
         <Label htmlFor="payment_method">Payment Method</Label>
-        <Select id="payment_method" name="payment_method" required>
+        {/* 👉 Tied Select to paymentMethod state */}
+        <Select 
+          id="payment_method" 
+          name="payment_method" 
+          value={paymentMethod}
+          onChange={(e) => setPaymentMethod(e.target.value as 'venue' | 'upi')}
+          required
+        >
           <option value="venue">Pay at Venue</option>
           <option value="upi">UPI (₹{ADVANCE_AMOUNTS.turf} Advance)</option>
         </Select>
       </div>
 
+      {/* 👉 Conditionally render the QR Code in a neat box matching your UI */}
+      {paymentMethod === 'upi' && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="flex flex-col items-center justify-center p-6 border border-primary/20 rounded-xl bg-surface/50 space-y-4"
+        >
+          <p className="text-sm text-center font-medium">
+            Scan to pay ₹{ADVANCE_AMOUNTS.turf} advance
+          </p>
+          <div className="bg-white p-3 rounded-xl shadow-sm">
+            <QRCode value={upiLink} size={160} />
+          </div>
+          <p className="text-xs text-text-muted text-center max-w-[250px]">
+            Please complete the payment using any UPI app, then click Request Booking below to confirm and attach payment screenshot in the chat.
+          </p>
+        </motion.div>
+      )}
+
       <Button type="submit" className="w-full" size="lg" disabled={loading || !selectedSlot}>
-        {loading ? 'Processing...' : 'Request Booking'}
+        {loading ? 'Processing...' : (paymentMethod === 'upi' ? 'I have Paid, Request Booking' : 'Request Booking')}
       </Button>
     </form>
   );

@@ -33,6 +33,24 @@ interface Booking {
   status: string;
   notes?: string;
 }
+function formatSlot(slot?: string) {
+  if (!slot) return "";
+
+  const [start, end] = slot.split("-").map(Number);
+
+  const convert = (h: number) => {
+    const hour = h % 24;
+    const period = hour >= 12 ? "PM" : "AM";
+    const display = hour % 12 === 0 ? 12 : hour % 12;
+    return `${display} ${period}`;
+  };
+
+  return `${convert(start)} - ${convert(end)}`;
+}
+function getSlotStart(slot?: string) {
+  if (!slot) return 0;
+  return Number(slot.split("-")[0]);
+}
 
 export default function AdminDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -62,10 +80,20 @@ export default function AdminDashboard() {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
-      setBookings(data);
-      calculateStats(data);
+   if (!error && data) {
+  const sorted = [...data].sort((a, b) => {
+    // first sort by date
+    if (a.date !== b.date) {
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
     }
+
+    // then sort by slot time
+    return getSlotStart(a.time_slot) - getSlotStart(b.time_slot);
+  });
+
+  setBookings(sorted);
+  calculateStats(sorted);
+}
     setLoading(false);
   };
 
@@ -316,7 +344,7 @@ Thank you.`;
                         <div className="text-sm text-gray-900 capitalize font-medium">{booking.type}</div>
                         <div className="text-sm text-gray-500">
                           {format(parseISO(booking.date), 'MMM d, yyyy')}
-                          {booking.time_slot && ` • ${booking.time_slot}`}
+                          {booking.time_slot && ` • ${formatSlot(booking.time_slot)}`}
                           {booking.room_type && ` • ${booking.room_type}`}
                           {booking.event_type && ` • ${booking.event_type}`}
                         </div>

@@ -7,11 +7,19 @@ import { Textarea } from '../ui/textarea';
 import { submitBooking, ADVANCE_AMOUNTS } from '@/src/lib/booking';
 import { motion } from 'motion/react';
 import { useBlockedDates } from '@/src/hooks/useBlockedDates';
+import QRCode from "react-qr-code";
+
+// 👉 Replace this with your actual business UPI ID
+const MY_UPI_ID = "8217366801@superyes"; 
 
 export default function EventForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState('');
+  
+  // 👉 Added state to track payment method for the QR code
+  const [paymentMethod, setPaymentMethod] = useState<'venue' | 'upi'>('venue');
+  
   const { isDateBlocked } = useBlockedDates('event');
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,7 +45,7 @@ export default function EventForm() {
       event_type: formData.get('event_type') as string,
       guests: Number(formData.get('guests')),
       notes: `Setup: ${formData.get('setup')}, Budget: ${formData.get('budget')}. ${formData.get('notes')}`,
-      payment_method: formData.get('payment_method') as 'upi' | 'venue',
+      payment_method: paymentMethod, // Uses state instead of formData
     };
 
     const res = await submitBooking(data);
@@ -45,14 +53,11 @@ export default function EventForm() {
 
     if (res.success) {
       setSuccess(res);
-      if (res.upiUrl) {
-        window.location.href = res.upiUrl;
-        setTimeout(() => window.open(res.waUrl, '_blank'), 2000);
-      } else {
-        window.open(res.waUrl, '_blank');
-      }
+      // 👉 Removed auto-redirect. Just opens WhatsApp.
+      setTimeout(() => window.open(res.waUrl, '_blank'), 2000);
     } else {
-      alert('Failed to submit booking. Please try again.');
+      // 👉 Uses the dynamic error message from booking.ts
+      alert(res.message || 'Failed to submit booking. Please try again.');
     }
   };
 
@@ -65,10 +70,13 @@ export default function EventForm() {
         <h2 className="text-2xl font-serif text-primary mb-2">Booking Requested!</h2>
         <p className="text-text-muted mb-6">Your booking reference is <strong className="text-primary">{success.ref}</strong>.</p>
         <p className="text-sm text-text-muted bg-primary/5 p-4 rounded-xl">Your booking request has been sent to the owner via WhatsApp. You'll receive confirmation shortly.</p>
-        <Button className="mt-6 w-full" onClick={() => setSuccess(null)}>Book Another</Button>
+        <Button className="mt-6 w-full" onClick={() => { setSuccess(null); setSelectedDate(''); }}>Book Another</Button>
       </motion.div>
     );
   }
+
+  // 👉 UPI link specifically targeting the event advance amount
+  const upiLink = `upi://pay?pa=${MY_UPI_ID}&pn=Little%20Mangalore&am=${ADVANCE_AMOUNTS.event}&cu=INR`;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -137,14 +145,39 @@ export default function EventForm() {
 
       <div>
         <Label htmlFor="payment_method">Payment Method</Label>
-        <Select id="payment_method" name="payment_method" required>
+        <Select 
+          id="payment_method" 
+          name="payment_method" 
+          value={paymentMethod}
+          onChange={(e) => setPaymentMethod(e.target.value as 'venue' | 'upi')}
+          required
+        >
           <option value="venue">Pay at Venue</option>
           <option value="upi">UPI (₹{ADVANCE_AMOUNTS.event} Advance)</option>
         </Select>
       </div>
 
+      {/* 👉 Conditionally render the QR Code */}
+      {paymentMethod === 'upi' && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="flex flex-col items-center justify-center p-6 border border-primary/20 rounded-xl bg-surface/50 space-y-4"
+        >
+          <p className="text-sm text-center font-medium">
+            Scan to pay ₹{ADVANCE_AMOUNTS.event} advance
+          </p>
+          <div className="bg-white p-3 rounded-xl shadow-sm">
+            <QRCode value={upiLink} size={160} />
+          </div>
+          <p className="text-xs text-text-muted text-center max-w-[250px]">
+            Please complete the payment using GPay, PhonePe, or Paytm, then click Request Booking below to confirm.
+          </p>
+        </motion.div>
+      )}
+
       <Button type="submit" className="w-full" size="lg" disabled={loading}>
-        {loading ? 'Processing...' : 'Request Booking'}
+        {loading ? 'Processing...' : (paymentMethod === 'upi' ? 'I have Paid, Request Booking' : 'Request Booking')}
       </Button>
     </form>
   );
