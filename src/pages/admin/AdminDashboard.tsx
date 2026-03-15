@@ -33,6 +33,7 @@ interface Booking {
   status: string;
   notes?: string;
 }
+
 function formatSlot(slot?: string) {
   if (!slot) return "";
 
@@ -47,6 +48,7 @@ function formatSlot(slot?: string) {
 
   return `${convert(start)} - ${convert(end)}`;
 }
+
 function getSlotStart(slot?: string) {
   if (!slot) return 0;
   return Number(slot.split("-")[0]);
@@ -67,6 +69,8 @@ export default function AdminDashboard() {
   // Filters
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  // 👉 1. Added new state for Date filtering
+  const [filterDate, setFilterDate] = useState('all'); 
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -81,19 +85,19 @@ export default function AdminDashboard() {
       .order('created_at', { ascending: false });
 
    if (!error && data) {
-  const sorted = [...data].sort((a, b) => {
-    // first sort by date
-    if (a.date !== b.date) {
-      return new Date(a.date).getTime() - new Date(b.date).getTime();
-    }
+    const sorted = [...data].sort((a, b) => {
+      // first sort by date
+      if (a.date !== b.date) {
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      }
 
-    // then sort by slot time
-    return getSlotStart(a.time_slot) - getSlotStart(b.time_slot);
-  });
+      // then sort by slot time
+      return getSlotStart(a.time_slot) - getSlotStart(b.time_slot);
+    });
 
-  setBookings(sorted);
-  calculateStats(sorted);
-}
+    setBookings(sorted);
+    calculateStats(sorted);
+  }
     setLoading(false);
   };
 
@@ -112,85 +116,54 @@ export default function AdminDashboard() {
 
     setStats({ total, today: todayBookings, pending, revenue });
   };
-  function formatSlot(slot?: string) {
-  if (!slot) return "";
 
-  const [start, end] = slot.split("-").map(Number);
+  const updateStatus = async (booking: Booking, newStatus: string) => {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: newStatus })
+      .eq('id', booking.id);
 
-  const convert = (h: number) => {
-    const hour = h % 24;
-    const period = hour >= 12 ? "PM" : "AM";
-    const display = hour % 12 === 0 ? 12 : hour % 12;
-    return `${display} ${period}`;
+    if (!error) {
+      const updatedBookings = bookings.map(b =>
+        b.id === booking.id ? { ...b, status: newStatus } : b
+      );
+
+      setBookings(updatedBookings);
+      calculateStats(updatedBookings);
+
+      // 🔔 Custom WhatsApp message
+      let message = "";
+
+      if (newStatus === "confirmed") {
+        message = `Hi ${booking.name}, your booking at Little Mangalore has been *confirmed* ✅\n\n📅 Date: ${booking.date}\n⏰ Time: ${booking.time_slot ? formatSlot(booking.time_slot) : (booking.room_type || booking.event_type)}\n\nPlease arrive 10 minutes early.\n\nThank you!`;
+      }
+
+      if (newStatus === "paid") {
+        message = `Hi ${booking.name}, we have received your payment 💰\n\nYour booking at Little Mangalore is now *fully confirmed*.\n\n📅 Date: ${booking.date}\n⏰ Time: ${booking.time_slot ? formatSlot(booking.time_slot) : (booking.room_type || booking.event_type)}\n\nSee you soon!`;
+      }
+
+      if (newStatus === "cancelled") {
+        message = `Hi ${booking.name}, unfortunately your booking at Little Mangalore has been *cancelled* ❌\n\n📅 Date: ${booking.date}\n\nIf you'd like to reschedule, please contact us.\n\nThank you.`;
+      }
+
+      const whatsappUrl = `https://wa.me/${booking.phone}?text=${encodeURIComponent(message)}`;
+
+      window.open(whatsappUrl, "_blank");
+
+    } else {
+      alert("Failed to update status");
+    }
   };
 
-  return `${convert(start)} - ${convert(end)}`;
-}
-
- const updateStatus = async (booking: Booking, newStatus: string) => {
-  const { error } = await supabase
-    .from('bookings')
-    .update({ status: newStatus })
-    .eq('id', booking.id);
-
-  if (!error) {
-    const updatedBookings = bookings.map(b =>
-      b.id === booking.id ? { ...b, status: newStatus } : b
-    );
-
-    setBookings(updatedBookings);
-    calculateStats(updatedBookings);
-
-    // 🔔 Custom WhatsApp message
-    let message = "";
-
-    if (newStatus === "confirmed") {
-      message = `Hi ${booking.name}, your booking at Little Mangalore has been *confirmed* ✅
-
-📅 Date: ${booking.date}
-⏰ Time: ${booking.time_slot ? formatSlot(booking.time_slot) : (booking.room_type || booking.event_type)}
-
-Please arrive 10 minutes early.
-
-Thank you!`;
-    }
-
-    if (newStatus === "paid") {
-      message = `Hi ${booking.name}, we have received your payment 💰
-
-Your booking at Little Mangalore is now *fully confirmed*.
-
-📅 Date: ${booking.date}
-⏰ Time: ${booking.time_slot ? formatSlot(booking.time_slot) : (booking.room_type || booking.event_type)}
-
-See you soon!`;
-    }
-
-    if (newStatus === "cancelled") {
-      message = `Hi ${booking.name}, unfortunately your booking at Little Mangalore has been *cancelled* ❌
-
-📅 Date: ${booking.date}
-
-If you'd like to reschedule, please contact us.
-
-Thank you.`;
-    }
-
-    const whatsappUrl = `https://wa.me/${booking.phone}?text=${encodeURIComponent(message)}`;
-
-    window.open(whatsappUrl, "_blank");
-
-  } else {
-    alert("Failed to update status");
-  }
-};
-
+  // 👉 2. Updated filtering logic to include filterDate
   const filteredBookings = bookings.filter(b => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
     const matchType = filterType === 'all' || b.type === filterType;
     const matchStatus = filterStatus === 'all' || b.status === filterStatus;
+    const matchDate = filterDate === 'all' || (filterDate === 'today' && b.date === todayStr);
     const matchSearch = b.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                         b.phone.includes(searchQuery);
-    return matchType && matchStatus && matchSearch;
+    return matchType && matchStatus && matchDate && matchSearch;
   });
 
   const exportCSV = () => {
@@ -255,8 +228,9 @@ Thank you.`;
         </div>
 
         {/* Filters & Actions */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+        {/* Note: changed sm:flex-row to flex-wrap if it gets too tight, but gap-4 handles it well */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col lg:flex-row gap-4 justify-between items-center">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-4 w-full lg:w-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -268,6 +242,16 @@ Thank you.`;
               />
             </div>
             
+            {/* 👉 3. Added Date Filter Dropdown */}
+            <select
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-[#2D9D78] focus:border-[#2D9D78]"
+            >
+              <option value="all">All Dates</option>
+              <option value="today">Today Only</option>
+            </select>
+
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
@@ -294,7 +278,7 @@ Thank you.`;
 
           <button
             onClick={exportCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-[#1B4332] text-white rounded-lg text-sm font-medium hover:bg-[#2D9D78] transition-colors w-full sm:w-auto justify-center"
+            className="flex items-center gap-2 px-4 py-2 bg-[#1B4332] text-white rounded-lg text-sm font-medium hover:bg-[#2D9D78] transition-colors w-full lg:w-auto justify-center"
           >
             <Download className="w-4 h-4" />
             Export CSV
