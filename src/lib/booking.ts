@@ -29,9 +29,27 @@ export const ADVANCE_AMOUNTS = {
 
 export async function submitBooking(data: BookingData) {
   try {
-    console.log("Booking insert payload:", data);
-    // 1. Insert into Supabase
-    const { data: insertedBooking, error } = await supabase
+    // 1. Check for Blocked Date
+    const { data: blocked, error: blockedError } = await supabase
+      .from('blocked_dates')
+      .select('reason')
+      .eq('date', data.date)
+      .maybeSingle();
+
+    // 🚩 IF BLOCKED, STOP AND RETURN IMMEDIATELY
+    if (blocked) {
+      console.log("Date is blocked, stopping execution.");
+      return { 
+        success: false, 
+        message: `This date is unavailable. Reason: ${blocked.reason || 'Management Block'}` 
+      };
+    }
+
+    // 2. Fix the 'guests' null constraint (DB requires a value)
+    const guestsCount = data.guests ?? (data.type === 'turf' ? 0 : 1);
+
+    // 3. Insert into Supabase
+    const { data: insertedBooking, error: insertError } = await supabase
       .from('bookings')
       .insert([
         {
@@ -39,49 +57,40 @@ export async function submitBooking(data: BookingData) {
           name: data.name,
           phone: data.phone,
           date: data.date,
-          time_slot: data.time_slot ?? null,
-          event_type: data.event_type ?? null,
-          room_type: data.room_type ?? null,
-          guests: data.guests ?? null,
+          time_slot: data.time_slot || null,
+          event_type: data.event_type || null,
+          room_type: data.room_type || null,
+          guests: guestsCount, 
           payment_method: data.payment_method,
-          notes: data.notes ?? null,
+          notes: data.notes || null,
           status: data.payment_method === 'upi' ? 'paid' : 'pending',
         },
       ])
       .select()
       .single();
 
-    if (error) throw error;
+    if (insertError) throw insertError;
 
+    // 4. Generate Reference and Links
     const bookingRef = insertedBooking.id.split('-')[0].toUpperCase();
+    const waUrl = generateWhatsAppLink(data, bookingRef);
 
-    // 2. Handle Payment / WhatsApp
     if (data.payment_method === 'upi') {
-      // Generate UPI Intent Link
       const amount = ADVANCE_AMOUNTS[data.type];
       const upiUrl = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_NAME)}&am=${amount}&tn=BookingRef${bookingRef}`;
-      
-      // Returning the URLs to the frontend
-      return { success: true, ref: bookingRef, upiUrl, waUrl: generateWhatsAppLink(data, bookingRef) };
-    } else {
-      // Pay at Venue -> Direct to WhatsApp
-      return { success: true, ref: bookingRef, waUrl: generateWhatsAppLink(data, bookingRef) };
-    }
-  } catch (error: any) {
-    console.error("Booking error:", JSON.stringify(error, null, 2));
-    
-    // 👉 Catch the specific Supabase duplicate constraint error
-    if (error?.code === '23505') {
-      return { 
-        success: false, 
-        message: 'This time slot was just booked by someone else! Please select another slot.' 
-      };
+      return { success: true, ref: bookingRef, upiUrl, waUrl };
     }
 
-    return { success: false, message: 'Failed to submit booking. Please try again.', error };
+    return { success: true, ref: bookingRef, waUrl };
+
+  } catch (error: any) {
+    console.error("Booking Logic Error:", error);
+    return { 
+      success: false, 
+      message: error.message || 'Failed to submit booking. Please try again.' 
+    };
   }
 }
-
 function formatSlot(slot?: string) {
   if (!slot) return "";
 

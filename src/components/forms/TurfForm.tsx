@@ -48,17 +48,22 @@ export default function TurfForm() {
   
   const { isDateBlocked } = useBlockedDates('turf');
   
-  useEffect(() => {
-    if (selectedDate) {
-      if (isDateBlocked(selectedDate)) {
-        alert('This date is currently unavailable. Please select another date.');
-        setSelectedDate('');
-        setBookedSlots([]);
-      } else {
-        fetchBookedSlots(selectedDate);
-      }
+  // Inside TurfForm.tsx
+useEffect(() => {
+  if (selectedDate) {
+    // 🚩 Check if the date is blocked IMMEDIATELY
+    if (isDateBlocked(selectedDate)) {
+      alert('This date is currently unavailable. Please select another date.');
+      setSelectedDate(''); // Reset the date picker
+      setSelectedSlot(''); // Reset any selected slot
+      setBookedSlots([]);
+      return; // Stop execution here
     }
-  }, [selectedDate, isDateBlocked]);
+
+    // If not blocked, proceed to fetch time slots
+    fetchBookedSlots(selectedDate);
+  }
+}, [selectedDate, isDateBlocked]);
 
   const fetchBookedSlots = async (date: string) => {
     const { data, error } = await supabase
@@ -72,7 +77,17 @@ export default function TurfForm() {
       setBookedSlots(data.map(b => b.time_slot?.trim()));
     }
   };
-
+const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const date = e.target.value;
+  if (isDateBlocked(date)) {
+    alert('This date is currently unavailable. Please select another date.');
+    setSelectedDate('');
+    setSelectedSlot('');
+    setBookedSlots([]);
+  } else {
+    setSelectedDate(date);
+  }
+};
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -114,15 +129,13 @@ export default function TurfForm() {
     setLoading(false);
 
     if (res.success) {
-      fetchBookedSlots(selectedDate);
-      setSuccess(res);
-      
-      // 👉 Removed the auto-redirect to UPI app because they scanned the QR code.
-      // Just opening WhatsApp confirmation now.
-      setTimeout(() => window.open(res.waUrl, '_blank'), 2000);
-    } else {
-      alert('Failed to submit booking. Please try again.');
-    }
+  fetchBookedSlots(selectedDate);
+  setSuccess(res);
+  setTimeout(() => window.open(res.waUrl, '_blank'), 2000);
+} else {
+  // 🟢 This will now show "This date is unavailable. Reason: event"
+  alert(res.message || 'Failed to submit booking. Please try again.');
+}
   };
 
   if (success) {
@@ -165,7 +178,7 @@ export default function TurfForm() {
             required 
             min={new Date().toISOString().split('T')[0]} 
             value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
+            onChange={handleDateChange}
           />
         </div>
         <div>

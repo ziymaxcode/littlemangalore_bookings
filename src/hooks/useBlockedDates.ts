@@ -5,26 +5,31 @@ export function useBlockedDates(type: "resort" | "event" | "turf") {
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
 
   useEffect(() => {
-    if (type !== "turf") {
-      fetchBlockedDates();
-    }
+    fetchBlockedDates();
   }, [type]);
 
   const fetchBlockedDates = async () => {
-    const { data, error } = await supabase
+    // 1. Get confirmed bookings (existing logic)
+    const { data: bookings } = await supabase
       .from("bookings")
       .select("date")
       .in("type", ["resort", "event"])
       .in("status", ["pending", "confirmed", "paid"]);
 
-    if (!error && data) {
-      const dates = data.map((b) => b.date);
-      setBlockedDates(dates);
-    }
+    // 2. Get manual admin blocks (the missing piece!)
+    const { data: adminBlocks } = await supabase
+      .from("blocked_dates")
+      .select("date");
+
+    const bookingDates = bookings?.map((b) => b.date) || [];
+    const manualDates = adminBlocks?.map((b) => b.date) || [];
+
+    // Combine both arrays into one unique list
+    setBlockedDates([...new Set([...bookingDates, ...manualDates])]);
   };
 
   const isDateBlocked = (date: string) => {
-    if (type === "turf") return false; // turf never blocks whole day
+    // Even for Turf, we should check if the Admin has blocked the WHOLE day (maintenance, etc.)
     return blockedDates.includes(date);
   };
 

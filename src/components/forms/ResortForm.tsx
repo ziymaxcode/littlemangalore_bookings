@@ -23,14 +23,16 @@ export default function ResortForm() {
   const { isDateBlocked } = useBlockedDates('resort');
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const date = e.target.value;
-    if (isDateBlocked(date)) {
-      alert('This date is currently unavailable. Please select another date.');
-      setSelectedDate('');
-    } else {
-      setSelectedDate(date);
-    }
-  };
+  const date = e.target.value;
+
+  // 🚩 Check the hook immediately
+  if (isDateBlocked(date)) {
+    alert('This date is unavailable (already booked or blocked by management).');
+    setSelectedDate(''); // This clears the input field immediately
+  } else {
+    setSelectedDate(date);
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

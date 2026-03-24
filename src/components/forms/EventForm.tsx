@@ -22,15 +22,17 @@ export default function EventForm() {
   
   const { isDateBlocked } = useBlockedDates('event');
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const date = e.target.value;
-    if (isDateBlocked(date)) {
-      alert('This date is currently unavailable. Please select another date.');
-      setSelectedDate('');
-    } else {
-      setSelectedDate(date);
-    }
-  };
+const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const date = e.target.value;
+  
+  // 🚩 Check the hook immediately when the user clicks a date
+  if (isDateBlocked(date)) {
+    alert('This date is currently unavailable. Please select another date.');
+    setSelectedDate(''); // This clears the calendar so they can't proceed
+  } else {
+    setSelectedDate(date);
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
